@@ -128,7 +128,12 @@ public class RangedAcknowledger extends BulkSQSOperation implements Acknowledger
     public void forgetUnAckMessages() {
         unAckMessages.clear();
     }
-    
+
+    @Override
+    public void deleteMessages(List<SQSMessageIdentifier> messagesToDelete) {
+        unAckMessages.clear();
+    }
+
     /**
      * Acknowledges up to 10 messages via calling
      * <code>deleteMessageBatch</code>.

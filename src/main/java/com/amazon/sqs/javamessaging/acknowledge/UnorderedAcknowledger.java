@@ -15,9 +15,9 @@
 package com.amazon.sqs.javamessaging.acknowledge;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import javax.jms.JMSException;
 
@@ -25,6 +25,8 @@ import com.amazon.sqs.javamessaging.AmazonSQSMessagingClientWrapper;
 import com.amazon.sqs.javamessaging.SQSSession;
 import com.amazon.sqs.javamessaging.message.SQSMessage;
 import com.amazonaws.services.sqs.model.DeleteMessageRequest;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 /**
  * Used to acknowledge messages in any order one at a time.
@@ -33,6 +35,7 @@ import com.amazonaws.services.sqs.model.DeleteMessageRequest;
  */
 public class UnorderedAcknowledger implements Acknowledger {
 
+    private static final Log LOG = LogFactory.getLog(UnorderedAcknowledger.class);
     private final AmazonSQSMessagingClientWrapper amazonSQSClient;
     
     private final SQSSession session;
@@ -44,7 +47,7 @@ public class UnorderedAcknowledger implements Acknowledger {
     public UnorderedAcknowledger (AmazonSQSMessagingClientWrapper amazonSQSClient, SQSSession session) {
         this.amazonSQSClient = amazonSQSClient;
         this.session = session;
-        this.unAckMessages  = new HashMap<String, SQSMessageIdentifier>();
+        this.unAckMessages  = new ConcurrentHashMap<String, SQSMessageIdentifier>();
     }
     
     /**
@@ -55,7 +58,9 @@ public class UnorderedAcknowledger implements Acknowledger {
         session.checkClosed();
         amazonSQSClient.deleteMessage(new DeleteMessageRequest(
                 message.getQueueUrl(), message.getReceiptHandle()));
+        LOG.info("Removing " + message.getReceiptHandle());
         unAckMessages.remove(message.getReceiptHandle());
+        LOG.info("Removed. size=" + unAckMessages.size());
     }
     
     /**
@@ -66,7 +71,9 @@ public class UnorderedAcknowledger implements Acknowledger {
     public void notifyMessageReceived(SQSMessage message) throws JMSException {
         SQSMessageIdentifier messageIdentifier = new SQSMessageIdentifier(
                 message.getQueueUrl(), message.getReceiptHandle(), message.getSQSMessageId());
+        LOG.info("Receiving " + message.getReceiptHandle());
         unAckMessages.put(message.getReceiptHandle(), messageIdentifier);
+        LOG.info("Received. size=" + unAckMessages.size());
     }
     
     /**
@@ -85,4 +92,12 @@ public class UnorderedAcknowledger implements Acknowledger {
         unAckMessages.clear();
     }
    
-}
+    @Override
+    public void deleteMessages(List<SQSMessageIdentifier> messagesToDelete) {
+        LOG.info("Deleting " + messagesToDelete.size() + " messages. size=" + unAckMessages.size());
+        for (SQSMessageIdentifier m: messagesToDelete) {
+            unAckMessages.remove(m.getReceiptHandle());
+        }
+        LOG.info("Deleted. size=" + unAckMessages.size());
+    }
+ }

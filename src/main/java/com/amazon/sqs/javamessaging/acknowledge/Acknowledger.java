@@ -52,4 +52,10 @@ public interface Acknowledger {
      */
     public void forgetUnAckMessages();
 
+    /**
+     * Deletes messages from the unacked list.
+     *
+     * @param  messagesToDelete
+     */
+    public void deleteMessages(List<SQSMessageIdentifier> messagesToDelete);
 }

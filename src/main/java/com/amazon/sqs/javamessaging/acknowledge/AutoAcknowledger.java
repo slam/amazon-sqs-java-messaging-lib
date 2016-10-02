@@ -64,10 +64,15 @@ public class AutoAcknowledger implements Acknowledger {
     public List<SQSMessageIdentifier> getUnAckMessages() {
         return Collections.<SQSMessageIdentifier>emptyList(); 
     }
-    
+
     /** AutoAcknowledge doesn't need to do anything in this method. */
     @Override
     public void forgetUnAckMessages() {
     }
- 
+
+    /** AutoAcknowledge doesn't need to do anything in this method. */
+    @Override
+    public void deleteMessages(List<SQSMessageIdentifier> messagesToDelete) {
+    }
+
 }
